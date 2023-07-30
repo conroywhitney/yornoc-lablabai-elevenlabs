@@ -125,8 +125,8 @@ def validate_input(file_or_transcript, openai_api_key, use_gpt_4, elevenlabs_api
     if use_gpt_4 and not check_gpt_4(openai_api_key):
         st.warning('Key not valid for GPT-4.')
         return False
-    
-    if not check_elevenlabs_key_validitiy(elevenlabs_api_key):
+
+    if not check_elevenlabs_key_validity(elevenlabs_api_key):
         st.warning('ElevenLabs Key not valid or API is down.')
         return False
 

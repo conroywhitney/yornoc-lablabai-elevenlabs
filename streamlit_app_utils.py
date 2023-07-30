@@ -138,7 +138,15 @@ def create_chat_model(api_key, use_gpt_4):
     :return: A chat model.
     """
     if use_gpt_4:
-        return ChatOpenAI(openai_api_key=api_key, temperature=0, max_tokens=500, model_name='gpt-3.5-turbo')
+        return ChatOpenAI(
+            frequency_penalty=0.0,
+            max_tokens=2500,
+            model_name='gpt-4-0613',
+            openai_api_key=api_key,
+            presence_penalty=0.0,
+            temperature=1,
+            top_p=0.1
+        )
     else:
         return ChatOpenAI(openai_api_key=api_key, temperature=0, max_tokens=250, model_name='gpt-3.5-turbo')
 
