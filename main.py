@@ -2,7 +2,7 @@ import os
 import streamlit as st
 
 from utils import (
-    doc_loader, summary_prompt_creator, doc_to_final_summary,
+    doc_loader, split_by_tokens, summary_prompt_creator, doc_to_final_summary,
 )
 from my_prompts import file_map, file_combine
 from streamlit_app_utils import \
@@ -13,9 +13,6 @@ from streamlit_app_utils import \
     create_chat_model, \
     token_limit, \
     token_minimum
-
-from utils import transcript_loader
-
 
 def main():
     """
@@ -37,11 +34,11 @@ def main():
                         This site is open source, so you can check the code yourself, or run the streamlit app locally.</small>""", unsafe_allow_html=True)
 
     if st.button('Generate Audiobook'):
-        process_summarize_button(uploaded_file, openai_api_key, use_gpt_4, elevenlabs_api_key)
+        process_generate_audiobook_button(uploaded_file, openai_api_key, use_gpt_4, elevenlabs_api_key)
 
-def process_summarize_button(file_or_transcript, openai_api_key, use_gpt_4, elevenlabs_api_key, file=True):
+def process_generate_audiobook_button(file_or_transcript, openai_api_key, use_gpt_4, elevenlabs_api_key, file=True):
     """
-    Processes the summarize button, and displays the summary if input and doc size are valid
+    Processes the generate audiobook button, and displays the summary if input and doc size are valid
 
     :param file_or_transcript: The file uploaded by the user or the transcript from the YouTube URL
 
@@ -53,12 +50,24 @@ def process_summarize_button(file_or_transcript, openai_api_key, use_gpt_4, elev
 
     :return: None
     """
+    temp_file_path = create_temp_file(file_or_transcript)
+    doc = doc_loader(temp_file_path)
+    
+    print('Doc')
+    splits = split_by_tokens(doc)
+    
+    for i in range(len(splits)):
+        split = splits[i]
+        print('Split', i)
+        print(split)    
+
     if not validate_input(file_or_transcript, openai_api_key, use_gpt_4, elevenlabs_api_key):
         return
 
     with st.spinner("Generating... please wait..."):
         temp_file_path = create_temp_file(file_or_transcript)
         doc = doc_loader(temp_file_path)
+
         map_prompt = file_map
         combine_prompt = file_combine
 
@@ -71,13 +80,13 @@ def process_summarize_button(file_or_transcript, openai_api_key, use_gpt_4, elev
                 os.unlink(temp_file_path)
             return
 
-        if elevenlabs_api_key:
-            summary = doc_to_final_summary(doc, 10, initial_prompt_list, final_prompt_list, openai_api_key, use_gpt_4, elevenlabs_api_key)
+        # if elevenlabs_api_key:
+        #     summary = doc_to_final_summary(doc, 10, initial_prompt_list, final_prompt_list, openai_api_key, use_gpt_4, elevenlabs_api_key)
 
-        else:
-            summary = doc_to_final_summary(doc, 10, initial_prompt_list, final_prompt_list, openai_api_key, use_gpt_4)
+        # else:
+        #     summary = doc_to_final_summary(doc, 10, initial_prompt_list, final_prompt_list, openai_api_key, use_gpt_4)
 
-        st.markdown(summary, unsafe_allow_html=True)
+        # st.markdown(summary, unsafe_allow_html=True)
         if file:
             os.unlink(temp_file_path)
 
