@@ -4,6 +4,8 @@ from langchain.schema import Document
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains.summarize import load_summarize_chain
+from langchain import LLMChain
+from langchain.prompts import SystemMessagePromptTemplate, PromptTemplate
 
 import streamlit as st
 
@@ -19,6 +21,7 @@ import time
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from my_prompts import reword_template
 
 def doc_loader(file_path: str):
     """
@@ -164,6 +167,39 @@ def create_summary_from_docs(summary_docs, initial_chain, final_sum_list, api_ke
 
     return final_summary
 
+def create_audiobook_text(docs, openai_api_key, use_gpt_4):
+    """
+    Summarize a list of loaded langchain Document objects using multiple langchain summarize chains.
+
+    :param docs: A list of loaded langchain Document objects to summarize.
+
+    :param openai_api_key: The OpenAI API key to use for summarization.
+
+    :param use_gpt_4: Whether to use GPT-4 or GPT-3.5-turbo for summarization.
+
+    :return: A string containing the re-written audiobook text.
+    """
+
+    progress = st.progress(0)  # Create a progress bar to show the progress of summarization.
+
+    text = doc_to_text(docs)
+    print("text", text)
+    text_tokens = token_counter(text)
+    print("text_tokens", text_tokens)
+    prompt_tokens = token_counter(reword_template)
+    print("prompt_tokens", prompt_tokens)
+    max_length = 8192 - int(text_tokens) - int(prompt_tokens) - 5
+    print("max_length", max_length)
+    chain = create_reword_chain(openai_api_key, use_gpt_4, text, max_length)
+    print("chain", chain)
+    output = chain.predict(text=text)
+    print("output", output)
+
+    progress.progress(1.0)  # Remove this line and all references to it if you are not using Streamlit.
+    time.sleep(0.4)  # Remove this line and all references to it if you are not using Streamlit.
+    progress.empty()  # Remove this line and all references to it if you are not using Streamlit.
+
+    return output
 
 def split_by_tokens(doc, chunk_size=4000):
     """
@@ -228,4 +264,45 @@ def summary_prompt_creator(prompt, input_var, llm):
     """
     prompt_list = [prompt, input_var, llm]
     return prompt_list
+
+
+def create_reword_chain(openai_api_key, use_gpt_4, text, max_length):
+    print("create_reword_chain", openai_api_key, use_gpt_4, max_length)
+    llm = create_chat_model(openai_api_key, use_gpt_4, max_length)
+    print("llm", llm)
+    prompt = PromptTemplate(
+        template=reword_template,
+        input_variables=["text"],
+    )
+    system_message_prompt = SystemMessagePromptTemplate(prompt=prompt)
+    print("prompt", prompt)
+    chain = LLMChain(llm=llm, prompt=prompt, verbose=True)
+    print("chain", chain)
+    return chain
+
+
+def create_chat_model(openai_api_key, use_gpt_4, max_length):
+    """
+    Create a chat model ensuring that the token limit of the overall summary is not exceeded - GPT-4 has a higher token limit.
+
+    :param api_key: The OpenAI API key to use for the chat model.
+
+    :param use_gpt_4: Whether to use GPT-4 or not.
+
+    :return: A chat model.
+    """
+    if use_gpt_4:
+        return ChatOpenAI(
+            max_tokens=max_length,
+            model_kwargs={
+                "frequency_penalty": 0.0,
+                "presence_penalty": 0.0,
+                "top_p": 0.1
+            },
+            model_name='gpt-4-0613',
+            openai_api_key=openai_api_key,
+            temperature=1,
+        )
+    else:
+        return ChatOpenAI(openai_api_key=openai_api_key, temperature=0, max_tokens=250, model_name='gpt-3.5-turbo')
 

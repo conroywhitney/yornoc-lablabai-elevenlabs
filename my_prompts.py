@@ -22,7 +22,7 @@ Format in HTML. Text should be divided into paragraphs. Paragraphs should be ind
 
 """
 
-reword_prompt = """
+reword_template = """
 Transform this text to a 7th- to 8th-grade reading level. Adapt the author's original writing style to a more straightforward narrative while still retaining its uniqueness. Infuse emotional depth, and portray the thoughts and feelings of characters in a way that is easily understood. Aim to create a smooth, immersive listening experience where the dialogue lines don't blend together but instead form a clear, engaging story.
 
 '''{text}'''

@@ -2,7 +2,7 @@ import os
 import streamlit as st
 
 from utils import (
-    doc_loader, split_by_tokens, summary_prompt_creator, doc_to_final_summary,
+    doc_loader, split_by_tokens, summary_prompt_creator, create_reword_chain, create_audiobook_text
 )
 from my_prompts import file_map, file_combine
 from streamlit_app_utils import \
@@ -10,7 +10,6 @@ from streamlit_app_utils import \
     check_openai_key_validity, \
     check_elevenlabs_key_validity, \
     create_temp_file, \
-    create_chat_model, \
     token_limit, \
     token_minimum
 
@@ -50,16 +49,6 @@ def process_generate_audiobook_button(file_or_transcript, openai_api_key, use_gp
 
     :return: None
     """
-    temp_file_path = create_temp_file(file_or_transcript)
-    doc = doc_loader(temp_file_path)
-    
-    print('Doc')
-    splits = split_by_tokens(doc)
-    
-    for i in range(len(splits)):
-        split = splits[i]
-        print('Split', i)
-        print(split)    
 
     if not validate_input(file_or_transcript, openai_api_key, use_gpt_4, elevenlabs_api_key):
         return
@@ -68,12 +57,15 @@ def process_generate_audiobook_button(file_or_transcript, openai_api_key, use_gp
         temp_file_path = create_temp_file(file_or_transcript)
         doc = doc_loader(temp_file_path)
 
-        map_prompt = file_map
-        combine_prompt = file_combine
+        # print('Doc')
+        # splits = split_by_tokens(doc)
 
-        llm = create_chat_model(openai_api_key, use_gpt_4)
-        initial_prompt_list = summary_prompt_creator(map_prompt, 'text', llm)
-        final_prompt_list = summary_prompt_creator(combine_prompt, 'text', llm)
+        # for i in range(len(splits)):
+        #     split = splits[i]
+        #     print('Split', i)
+        #     print(split)
+
+        output = create_audiobook_text(doc, openai_api_key, use_gpt_4)
 
         if not validate_doc_size(doc):
             if file:
